@@ -12,6 +12,12 @@ ENTITY_KEYS = {
 
 INVALID_DATES = {"today", "yesterday", "tomorrow"}
 MONEY_PATTERN = re.compile(r"[₹$€]\s?\d+(?:,\d+)*(?:\.\d+)?", re.IGNORECASE)
+STRUCTURED_NAME_PATTERN = re.compile(
+    r"(?:To|From|Client|Buyer)\s*:?\s*\n?\s*([A-Z][a-z]+(?:\s+[A-Z][a-z]+)+?)(?=\s+[A-Z][A-Za-z ]{1,40}\s*:|$)",
+    re.IGNORECASE,
+)
+ORG_SUFFIX_PATTERN = re.compile(r"\b(?:Pvt\s+Ltd|Ltd|Inc|LLC|Corp|Corporation|Company)\b", re.IGNORECASE)
+TRAILING_FIELD_LABEL_PATTERN = re.compile(r"\s+(?:To|From|Client|Buyer|Date|Amount)\s*$", re.IGNORECASE)
 
 
 def _normalize_text(text: str) -> str:
@@ -72,6 +78,54 @@ def _merge_amount(items: List[str], seen: dict[str, str], value: str) -> None:
         seen[key] = normalized
 
 
+def _looks_like_organization(value: str) -> bool:
+    return bool(ORG_SUFFIX_PATTERN.search(value))
+
+
+def _is_valid_structured_name(value: str) -> bool:
+    normalized = _normalize_text(value)
+    parts = normalized.split()
+    if len(parts) < 2:
+        return False
+
+    if _looks_like_organization(normalized):
+        return False
+
+    for part in parts:
+        if not re.fullmatch(r"[A-Z][a-z]+(?:[-'][A-Z][a-z]+)?", part):
+            return False
+
+    return True
+
+
+def _extract_structured_names(text: str) -> List[str]:
+    names: List[str] = []
+    seen: set[str] = set()
+
+    for match in STRUCTURED_NAME_PATTERN.finditer(text):
+        value = _normalize_text(match.group(1))
+        if not _is_valid_structured_name(value):
+            continue
+
+        marker = value.lower()
+        if marker in seen:
+            continue
+
+        seen.add(marker)
+        names.append(value)
+
+    return names
+
+
+def _clean_organization_value(value: str) -> str:
+    cleaned = _normalize_text(value)
+    while True:
+        updated = TRAILING_FIELD_LABEL_PATTERN.sub("", cleaned)
+        if updated == cleaned:
+            return cleaned
+        cleaned = updated
+
+
 @lru_cache(maxsize=1)
 def _get_nlp():
     try:
@@ -119,11 +173,19 @@ def extract_entities(text: str) -> Dict[str, List[str]]:
             _merge_amount(result["amounts"], amount_seen, value)
             continue
 
+        if target_key == "organizations":
+            value = _clean_organization_value(value)
+            if not value:
+                continue
+
         marker = value.lower()
         if marker in seen[target_key]:
             continue
 
         _add_unique(result[target_key], seen[target_key], value)
+
+    for name in _extract_structured_names(text):
+        _add_unique(result["names"], seen["names"], name)
 
     return result
 

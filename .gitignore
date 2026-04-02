@@ -1,14 +1,6 @@
 # Local virtual environment
-venv/
+.venv/
 
 # Python bytecode/cache generated during runs
 __pycache__/
 *.py[cod]
-
-# Local environment secrets (template stays tracked)
-.env
-.env.*
-!.env.example
-
-# Local sample inputs used for manual testing
-Sample data/
