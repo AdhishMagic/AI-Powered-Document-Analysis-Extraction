@@ -1,0 +1,11 @@
+# Local virtual environment
+venv/
+
+# Python bytecode/cache generated during runs
+__pycache__/
+*.py[cod]
+
+# Local environment secrets (template stays tracked)
+.env
+.env.*
+!.env.example
