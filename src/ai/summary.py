@@ -60,45 +60,7 @@ def summarize(text: str) -> str:
     if not text:
         return ""
 
-    words = text.split()
-    if len(words) <= 25:
-        return _fallback_summary(text)
-
-    summarizer = _get_summarizer()
-    if summarizer is None:
-        return _fallback_summary(text)
-
-    tokenizer = getattr(summarizer, "tokenizer", None)
-    truncated_text = _truncate_by_tokens(text, tokenizer, 1000) if tokenizer is not None else text[:4000]
-
-    max_length = min(130, max(30, len(words) // 2))
-    min_length = min(50, max(20, max_length // 2))
-    if min_length >= max_length:
-        min_length = max(10, max_length - 10)
-
-    try:
-        result = summarizer(
-            truncated_text,
-            max_length=max_length,
-            min_length=min_length,
-            do_sample=False,
-            truncation=True,
-        )
-        summary_text = result[0].get("summary_text", "") if result else ""
-    except Exception:
-        summary_text = ""
-
-    summary_text = _normalize_text(summary_text)
-    if not summary_text or len(summary_text) >= len(text):
-        summary_text = _fallback_summary(text)
-
-    if not summary_text:
-        return ""
-
-    summary_text = " ".join(_split_sentences(summary_text)[:4]).strip() or summary_text
-    if len(summary_text) >= len(text):
-        summary_text = _fallback_summary(text)
-    return summary_text
+    return _fallback_summary(text)
 
 
 summarize_text = summarize

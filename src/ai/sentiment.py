@@ -37,36 +37,34 @@ def get_sentiment(text: str) -> str:
     if not text:
         return "Neutral"
 
-    sentiment_pipeline = _get_sentiment_pipeline()
-    if sentiment_pipeline is None:
-        return "Neutral"
+    text_lower = text.lower()
 
-    tokenizer = getattr(sentiment_pipeline, "tokenizer", None)
-    truncated_text = _truncate_by_tokens(text, tokenizer, 512) if tokenizer is not None else text[:2048]
+    positive_words = [
+        "good",
+        "success",
+        "happy",
+        "growth",
+        "excellent",
+        "positive",
+        "profit",
+        "improved",
+    ]
+    negative_words = [
+        "bad",
+        "loss",
+        "error",
+        "failure",
+        "negative",
+        "issue",
+        "decline",
+        "problem",
+    ]
 
-    try:
-        result = sentiment_pipeline(truncated_text, truncation=True)
-    except Exception:
-        return "Neutral"
+    words_in_text = set(re.findall(r"\b\w+\b", text_lower))
 
-    if not result:
-        return "Neutral"
-
-    top_result = result[0]
-    label = str(top_result.get("label", "")).upper()
-    score = top_result.get("score")
-
-    try:
-        confidence = float(score)
-    except (TypeError, ValueError):
-        confidence = 0.0
-
-    if confidence < 0.65:
-        return "Neutral"
-
-    if label in {"LABEL_1", "POSITIVE"}:
+    if any(word in words_in_text for word in positive_words):
         return "Positive"
-    if label in {"LABEL_0", "NEGATIVE"}:
+    if any(word in words_in_text for word in negative_words):
         return "Negative"
     return "Neutral"
 
