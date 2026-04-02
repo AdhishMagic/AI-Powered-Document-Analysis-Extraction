@@ -24,6 +24,21 @@ app = FastAPI()
 API_KEY = "sk_track2_987654321"
 
 
+@app.get("/")
+def root() -> dict[str, str]:
+    return {
+        "status": "ok",
+        "message": "AI-Powered Document Analysis & Extraction API",
+        "docs": "/docs",
+        "endpoint": "/api/document-analyze",
+    }
+
+
+@app.get("/health")
+def health() -> dict[str, str]:
+    return {"status": "healthy"}
+
+
 def save_temp_file(file_base64: str, filename: str) -> str:
     try:
         payload = file_base64.split(",", 1)[1] if "," in file_base64 else file_base64
