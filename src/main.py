@@ -66,7 +66,7 @@ def extract_text(file_path: str, file_type: str) -> str:
     if normalized_type == "docx":
         return extract_docx(file_path)
     if normalized_type in {"image", "jpg", "jpeg", "png"}:
-        return extract_image(file_path)
+        return ""
 
     raise HTTPException(status_code=400, detail="Unsupported file type")
 
@@ -90,6 +90,7 @@ def document_analyze(payload: dict[str, Any], x_api_key: str = Header(default=""
     try:
         temp_file_path = save_temp_file(file_base64=file_base64, filename=file_name)
         text = extract_text(file_path=temp_file_path, file_type=file_type)
+        text = text[:3000]
 
         if not text or not text.strip():
             raise HTTPException(status_code=400, detail="Extraction failed or no text found")
