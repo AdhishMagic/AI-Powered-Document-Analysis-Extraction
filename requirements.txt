@@ -2,3 +2,7 @@ fastapi
 uvicorn
 pdfplumber
 python-docx
+transformers
+torch
+pillow
+pytesseract
